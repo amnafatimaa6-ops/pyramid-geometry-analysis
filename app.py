@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -10,12 +10,12 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import IsolationForest
 
 # =========================
-# PAGE CONFIG
+# PAGE SETUP
 # =========================
 st.set_page_config(page_title="Pyramid Atlas", layout="wide")
 
 st.title("🏺 Ancient Egypt Pyramid Intelligence Atlas")
-st.write("A computational archaeology system mapping geometry + geography + anomalies")
+st.write("Geometric + Geographic + Archaeological AI Exploration System")
 
 # =========================
 # LOAD DATA
@@ -24,7 +24,7 @@ df = pd.read_csv("pyramids.csv")
 df.columns = df.columns.str.strip()
 
 # =========================
-# CLEAN + FEATURE ENGINEERING
+# CLEAN + FEATURES
 # =========================
 df_clean = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"]).copy()
 
@@ -60,13 +60,26 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 🌍 CIVILIZATION ZONES (MAP LOGIC)
+# 🌊 NILE RIVER CURVE
+# =========================
+nile_lat = [
+    30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3, 27.9,
+    27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8
+]
+
+nile_lon = [
+    31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20, 31.18,
+    31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02
+]
+
+# =========================
+# ZONES
 # =========================
 df_clean["zone"] = "other"
 
 df_clean.loc[
     df_clean["Site"].str.contains(
-        "giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun|south saqqara|north saqqara",
+        "giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun",
         case=False, na=False
     ),
     "zone"
@@ -80,7 +93,6 @@ df_clean.loc[
     "zone"
 ] = "ancient_upper_egypt_zone"
 
-# COLORS
 color_map = {
     "major_pyramid_zone": "gold",
     "ancient_upper_egypt_zone": "orange",
@@ -90,9 +102,9 @@ color_map = {
 df_clean["color"] = df_clean["zone"].map(color_map)
 
 # =========================
-# 🗺️ EGYPT MAP VIEW
+# 🗺️ MAP + NILE
 # =========================
-st.subheader("🗺️ Civilization & Pyramid Distribution Map")
+st.subheader("🗺️ Egypt Civilization Map with Nile River")
 
 fig_map = px.scatter_geo(
     df_clean,
@@ -105,17 +117,24 @@ fig_map = px.scatter_geo(
     projection="natural earth"
 )
 
+# 🌊 Nile River Line
+fig_map.add_trace(
+    go.Scattergeo(
+        lat=nile_lat,
+        lon=nile_lon,
+        mode="lines",
+        line=dict(width=3, color="blue"),
+        name="Nile River"
+    )
+)
+
 fig_map.update_layout(
-    title=dict(
-        text="🏺 Ancient Egypt Civilization Zones & Pyramid Sites",
-        font=dict(size=28)
-    ),
     geo=dict(
         showland=True,
-        landcolor="rgb(235, 235, 235)",
-        showcountries=True,
+        landcolor="rgb(235,235,235)",
         showocean=True,
-        oceancolor="rgb(210, 230, 255)",
+        oceancolor="rgb(210,230,255)",
+        showcountries=True,
         center=dict(lat=26.8, lon=31.0),
         projection_scale=4.5
     ),
@@ -123,8 +142,10 @@ fig_map.update_layout(
 )
 
 # =========================
-# 🌌 3D STRUCTURAL SPACE
+# 🌌 3D STRUCTURE SPACE
 # =========================
+st.subheader("🌌 3D Pyramid Structural Space")
+
 colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
 
 fig_3d = go.Figure()
@@ -136,25 +157,20 @@ fig_3d.add_trace(go.Scatter3d(
     mode="markers+text",
     text=df_clean["Pharaoh"],
     textposition="top center",
-    marker=dict(size=6, color=colors, opacity=0.85)
+    marker=dict(size=5, color=colors, opacity=0.8)
 ))
 
 fig_3d.update_layout(
-    title=dict(
-        text="🏺 3D Pyramid Structural Intelligence Space",
-        font=dict(size=30)
-    ),
     scene=dict(
-        xaxis_title="Structural Axis 1",
-        yaxis_title="Structural Axis 2",
-        zaxis_title="Structural Depth"
+        xaxis_title="PC1",
+        yaxis_title="PC2",
+        zaxis_title="PC3"
     ),
-    height=600,
-    margin=dict(l=0, r=0, b=0, t=80)
+    height=600
 )
 
 # =========================
-# SIDE BY SIDE VIEW
+# SIDE BY SIDE
 # =========================
 col1, col2 = st.columns(2)
 
@@ -165,9 +181,9 @@ with col2:
     st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
-# 🏗️ INDIVIDUAL PYRAMID VIEWER
+# 🏗️ PYRAMID BUILDER
 # =========================
-st.subheader("🏗️ Pyramid 3D Builder")
+st.subheader("🏗️ Individual Pyramid 3D Builder")
 
 selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
 row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
@@ -182,53 +198,34 @@ fig_pyr.add_trace(go.Mesh3d(
     x=[-half, half, half, -half],
     y=[-half, -half, half, half],
     z=[0, 0, 0, 0],
-    color="tan",
-    opacity=0.5
+    opacity=0.4,
+    color="tan"
 ))
 
 apex = (0, 0, height)
 
-base_points = [
-    (-half, -half, 0),
-    (half, -half, 0),
-    (half, half, 0),
-    (-half, half, 0)
-]
-
-for x, y, z in base_points:
+for x, y in [(-half, -half), (half, -half), (half, half), (-half, half)]:
     fig_pyr.add_trace(go.Scatter3d(
         x=[x, apex[0]],
         y=[y, apex[1]],
-        z=[z, apex[2]],
+        z=[0, apex[2]],
         mode="lines",
-        line=dict(color="brown", width=5)
+        line=dict(color="brown", width=4)
     ))
 
-fig_pyr.update_layout(
-    title=dict(
-        text=f"🏺 {selected} - 3D Structure",
-        font=dict(size=26)
-    ),
-    scene=dict(
-        xaxis_title="X",
-        yaxis_title="Y",
-        zaxis_title="Height"
-    ),
-    height=600,
-    margin=dict(l=0, r=0, b=0, t=80)
-)
+fig_pyr.update_layout(height=600)
 
 st.plotly_chart(fig_pyr, use_container_width=True)
 
 # =========================
-# 🧠 INSIGHT PANEL
+# 🧠 INSIGHTS
 # =========================
-st.subheader("🧠 Archaeological Intelligence Insight")
+st.subheader("🧠 Key Insights")
 
 st.write("""
-- Egypt shows strong **Nile-centered civilization clustering**
-- Pyramid construction is highly concentrated in **Giza–Saqqara–Dahshur corridor**
-- Structural geometry forms a **continuous evolutionary system, not separate categories**
-- Anomalies represent **experimental architectural phases or transitional dynasties**
-- Ancient Egypt behaves like a **stable engineering civilization with regional expansion nodes**
+- Pyramids cluster strongly along the Nile corridor
+- Giza–Saqqara–Dahshur forms the architectural core zone
+- Geometry shows continuity, not discrete structural classes
+- Anomalies reflect experimental or transitional construction phases
+- Civilization is spatially constrained to river-based development
 """)
