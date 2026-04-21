@@ -94,30 +94,122 @@ nile_lon = np.array([
 nile_lon = nile_lon + np.sin(t * 0.5) * 0.02
 
 # =========================
-# 🗺️ MAP
+# 🇪🇬 EGYPT CIVILIZATION MAP (UPGRADED)
 # =========================
-fig_map = px.scatter_geo(
-    df_dyn,
-    lat="Latitude",
-    lon="Longitude",
-    hover_name="Pharaoh",
-    hover_data=["Site", "Base1 (m)", "Height (m)"],
-    color="Dynasty",
-    projection="natural earth"
+st.subheader("🗺️ Egypt Civilization Map (Pyramids + Nile + Ancient Zones)")
+
+# -------------------------
+# 🌊 NILE RIVER (realistic curve)
+# -------------------------
+nile_lat = [
+    31.2, 30.9, 30.6, 30.2, 29.9, 29.6, 29.3, 29.0,
+    28.7, 28.3, 27.9, 27.5, 27.1, 26.7, 26.3, 25.9, 25.5
+]
+
+nile_lon = [
+    31.3, 31.28, 31.26, 31.24, 31.22, 31.20, 31.18, 31.16,
+    31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02, 31.00, 30.98
+]
+
+# -------------------------
+# 🔴 PYRAMID SITES (REAL LOCATIONS)
+# -------------------------
+pyramid_sites = df_clean.copy()
+
+# -------------------------
+# 🟠 ANCIENT CIVILISATION ZONES (buffered region idea)
+# -------------------------
+df_clean["civil_zone"] = "outside"
+
+df_clean.loc[
+    df_clean["Site"].str.contains(
+        "giza|saqqara|dahshur|abusir|lisht|hawara",
+        case=False, na=False
+    ),
+    "civil_zone"
+] = "pyramid_core"
+
+df_clean.loc[
+    df_clean["Site"].str.contains(
+        "abydos|edfu|elephantine|hierakonpolis|dara|naqada",
+        case=False, na=False
+    ),
+    "civil_zone"
+] = "ancient_expansion"
+
+# -------------------------
+# COLOR RULES
+# -------------------------
+color_map = {
+    "pyramid_core": "red",        # 🔴 active pyramid regions
+    "ancient_expansion": "orange",# 🟠 ancient civilization spread
+    "outside": "lightgray"
+}
+
+df_clean["color"] = df_clean["civil_zone"].map(color_map)
+
+# -------------------------
+# 🌍 MAP FIGURE
+# -------------------------
+import plotly.graph_objects as go
+import plotly.express as px
+
+fig_map = go.Figure()
+
+# 🌊 Nile River
+fig_map.add_trace(go.Scattergeo(
+    lat=nile_lat,
+    lon=nile_lon,
+    mode="lines",
+    line=dict(width=3, color="blue"),
+    name="Nile River"
+))
+
+# 🔴 + 🟠 Civilisation Points
+fig_map.add_trace(go.Scattergeo(
+    lat=df_clean["Latitude"],
+    lon=df_clean["Longitude"],
+    mode="markers+text",
+    text=df_clean["Pharaoh"],
+    textposition="top center",
+    marker=dict(
+        size=7,
+        color=df_clean["color"],
+        opacity=0.9
+    ),
+    hovertext=df_clean["Site"],
+    name="Civilization Sites"
+))
+
+# -------------------------
+# MAP STYLE (FOCUSED EGYPT VIEW)
+# -------------------------
+fig_map.update_layout(
+    title=dict(
+        text="🇪🇬 Ancient Egypt Civilization Map (Nile + Pyramid Core + Expansion Zones)",
+        font=dict(size=22)
+    ),
+    geo=dict(
+        scope="africa",
+        projection_type="natural earth",
+
+        # zoom into Egypt region
+        center=dict(lat=26.8, lon=31.0),
+        projection_scale=6,
+
+        showland=True,
+        landcolor="rgb(240,240,240)",
+        showocean=True,
+        oceancolor="rgb(200,230,255)",
+        showcountries=True,
+
+        lataxis=dict(range=[22, 32]),
+        lonaxis=dict(range=[24, 35])
+    ),
+    height=700
 )
 
-fig_map.add_trace(
-    go.Scattergeo(
-        lat=nile_lat,
-        lon=nile_lon,
-        mode="lines",
-        line=dict(color="blue", width=3),
-        name="Nile River (Flowing)"
-    )
-)
-
-fig_map.update_layout(height=650)
-
+st.plotly_chart(fig_map, use_container_width=True)
 # =========================
 # 🌌 3D STRUCTURE SPACE
 # =========================
