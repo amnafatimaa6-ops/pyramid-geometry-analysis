@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -25,12 +23,12 @@ numeric_cols = ['base1_(m)', 'base2_(m)', 'height_(m)', 'slope_(dec_degr)', 'vol
 for col in numeric_cols:
     df[col] = pd.to_numeric(df[col], errors='coerce')
 
-# Fill slope using geometry
+# Fill slope
 df['slope_(dec_degr)'] = df['slope_(dec_degr)'].fillna(
     np.degrees(np.arctan(df['height_(m)'] / ((df['base1_(m)'] + df['base2_(m)']) / 4)))
 )
 
-# Standardize text
+# Clean text
 for col in ['pharaoh', 'ancient_name', 'modern_name', 'site', 'type']:
     df[col] = df[col].astype(str).str.lower().str.strip()
 
@@ -60,7 +58,7 @@ df_pca = pd.DataFrame(X_pca, columns=["PC1", "PC2"])
 kmeans = KMeans(n_clusters=3, random_state=42)
 df_pca["cluster"] = kmeans.fit_predict(X_pca)
 
-# Anomaly Detection
+# Anomaly detection
 iso = IsolationForest(contamination=0.15, random_state=42)
 df_pca["anomaly"] = iso.fit_predict(X_scaled)
 
@@ -71,7 +69,7 @@ nile_lat = np.linspace(30, 24, 200)
 nile_lon = 31 + 0.8*np.sin(np.linspace(0, 3*np.pi, 200))
 
 # =========================
-# 🌍 EGYPT MAP
+# 🌍 MAP (FIXED - NO BLACK SCREEN)
 # =========================
 fig_map = go.Figure()
 
@@ -85,40 +83,26 @@ fig_map.add_trace(go.Scattergeo(
     name="Pyramids"
 ))
 
-# Nile base
+# Nile line
 fig_map.add_trace(go.Scattergeo(
     lat=nile_lat,
     lon=nile_lon,
     mode="lines",
     line=dict(width=4, color="blue"),
-    name="Nile"
+    name="Nile River"
 ))
 
-# Flowing Nile dots
+# Shimmer effect (SAFE)
 fig_map.add_trace(go.Scattergeo(
     lat=nile_lat,
     lon=nile_lon,
     mode="markers",
-    marker=dict(size=6, color="cyan"),
-    name="Flow"
+    marker=dict(size=6, color="cyan", opacity=0.4),
+    showlegend=False
 ))
 
-# Shimmer effect
-shimmer_frames = []
-for i in range(20):
-    shimmer_frames.append(go.Frame(
-        data=[go.Scattergeo(
-            lat=nile_lat,
-            lon=nile_lon,
-            mode="markers",
-            marker=dict(size=8+(i%5), color="rgba(0,255,255,0.3)")
-        )]
-    ))
-
-fig_map.frames = shimmer_frames
-
 fig_map.update_layout(
-    title="🌍 Egypt Pyramid Map with Living Nile",
+    title="🌍 Egypt Pyramid Map",
     geo=dict(
         scope="africa",
         projection_type="natural earth",
@@ -127,30 +111,22 @@ fig_map.update_layout(
         showcountries=True,
         lataxis_range=[20, 35],
         lonaxis_range=[25, 35]
-    ),
-    updatemenus=[dict(
-        type="buttons",
-        buttons=[dict(
-            label="🌊 Flow Nile",
-            method="animate",
-            args=[None, dict(frame=dict(duration=120, redraw=True))]
-        )]
-    )]
+    )
 )
 
 fig_map.show()
 
 # =========================
-# 🏜️ 3D PYRAMID SPACE
+# 🏜️ 3D PYRAMID SPACE (FIXED)
 # =========================
 fig_geo3d = go.Figure()
 
 fig_geo3d.add_trace(go.Scatter3d(
     x=df["longitude"],
     y=df["latitude"],
-    z=df["height_(m)"],
+    z=df["height_(m)"].fillna(0),  # FIX
     mode="markers",
-    marker=dict(size=5, color=df["height_(m)"], colorscale="Viridis"),
+    marker=dict(size=5, color=df["height_(m)"].fillna(0), colorscale="Viridis"),
     text=df["pharaoh"]
 ))
 
