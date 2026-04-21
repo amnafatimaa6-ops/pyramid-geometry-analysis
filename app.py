@@ -10,7 +10,7 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import IsolationForest
 
 # =========================
-# PAGE CONFIG
+# PAGE SETUP
 # =========================
 st.set_page_config(page_title="Pyramid Atlas", layout="wide")
 
@@ -24,7 +24,7 @@ df = pd.read_csv("pyramids.csv")
 df.columns = df.columns.str.strip()
 
 # =========================
-# CLEAN + FEATURE ENGINEERING
+# CLEAN + FEATURES
 # =========================
 df_clean = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"]).copy()
 
@@ -60,7 +60,7 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 🌊 NILE RIVER PATH
+# 🌊 NILE RIVER
 # =========================
 nile_lat = [30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3, 27.9, 27.5]
 nile_lon = [31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20, 31.18, 31.16]
@@ -87,7 +87,7 @@ color_map = {
 }
 
 # =========================
-# 🗺️ MAP VIEW
+# 🗺️ MAP
 # =========================
 st.subheader("🗺️ Egypt Map + Nile River")
 
@@ -209,62 +209,49 @@ st.subheader("🧠 Insights")
 st.write("""
 - Pyramid construction follows Nile corridor  
 - Giza–Saqqara–Dahshur dominate architecture  
-- Geometry is consistent with small anomalies  
-- Variation reflects evolution, not randomness  
+- Geometry is consistent with few anomalies  
+- Variation reflects historical evolution  
 """)
 
 # ==========================================================
-# 🏺 FIXED ANIMATED EVOLUTION (BC TIMELINE)
+# ⏳ BC → AD TIMELINE (ADDED BLOCK)
 # ==========================================================
-st.subheader("🏺 Pyramid Evolution Across Ancient Egypt Timeline")
+st.subheader("⏳ Egypt Civilization Timeline (BC → AD)")
 
-df_anim = df_clean.copy()
-df_anim["Dynasty"] = pd.to_numeric(df_anim["Dynasty"], errors="coerce")
-df_anim = df_anim.dropna(subset=["Dynasty"])
-df_anim["Dynasty"] = df_anim["Dynasty"].astype(int)
+timeline_data = pd.DataFrame({
+    "Era": [
+        "Early Dynastic",
+        "Old Kingdom",
+        "First Intermediate",
+        "Middle Kingdom",
+        "Second Intermediate",
+        "New Kingdom",
+        "Late Period",
+        "Ptolemaic Era",
+        "Roman Egypt",
+        "Modern Egypt"
+    ],
+    "Start": [-3000, -2600, -2200, -2050, -1700, -1550, -700, -332, -30, 1800],
+    "End":   [-2600, -2200, -2050, -1700, -1550, -1070, -332, -30, 395, 2026]
+})
 
-def dynasty_to_period(d):
-    if d <= 3:
-        return "Early Dynastic (2700–2600 BC)"
-    elif d <= 6:
-        return "Old Kingdom (2600–2200 BC)"
-    elif d <= 11:
-        return "First Intermediate (2200–2050 BC)"
-    elif d <= 12:
-        return "Middle Kingdom (2050–1700 BC)"
-    elif d <= 17:
-        return "Second Intermediate (1700–1550 BC)"
-    else:
-        return "New Kingdom (1550–1070 BC)"
+fig_time = go.Figure()
 
-df_anim["Period"] = df_anim["Dynasty"].apply(dynasty_to_period)
+for i, row in timeline_data.iterrows():
+    fig_time.add_trace(go.Scatter(
+        x=[row["Start"], row["End"]],
+        y=[row["Era"], row["Era"]],
+        mode="lines+markers",
+        line=dict(width=8),
+        marker=dict(size=10),
+        name=row["Era"]
+    ))
 
-order = [
-    "Early Dynastic (2700–2600 BC)",
-    "Old Kingdom (2600–2200 BC)",
-    "First Intermediate (2200–2050 BC)",
-    "Middle Kingdom (2050–1700 BC)",
-    "Second Intermediate (1700–1550 BC)",
-    "New Kingdom (1550–1070 BC)"
-]
-
-df_anim["Period"] = pd.Categorical(df_anim["Period"], categories=order, ordered=True)
-
-df_anim["size"] = df_anim["Height (m)"] / df_anim["Height (m)"].max()
-
-fig_evo = px.scatter_3d(
-    df_anim,
-    x="Longitude",
-    y="Latitude",
-    z="Height (m)",
-    color="Period",
-    animation_frame="Period",
-    hover_name="Pharaoh",
-    size="size",
-    size_max=10,
-    title="🏺 Egypt Pyramid Evolution (BC Timeline)"
+fig_time.update_layout(
+    title="🏺 Egypt Civilization Evolution Timeline",
+    xaxis_title="Time (BC → AD)",
+    yaxis_title="Era",
+    height=600
 )
 
-fig_evo.update_layout(height=700)
-
-st.plotly_chart(fig_evo, use_container_width=True)
+st.plotly_chart(fig_time, use_container_width=True)
