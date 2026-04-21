@@ -1,5 +1,7 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
 import plotly.graph_objects as go
 
 from sklearn.preprocessing import StandardScaler
@@ -8,199 +10,262 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import IsolationForest
 
 # =========================
+# PAGE SETUP
+# =========================
+st.set_page_config(page_title="Pyramid Atlas", layout="wide")
+
+st.title("🏺 Ancient Egypt Pyramid Intelligence Atlas")
+st.write("Geometric + Geographic + Archaeological AI Exploration System")
+
+# =========================
 # LOAD DATA
 # =========================
 df = pd.read_csv("pyramids.csv")
+df.columns = df.columns.str.strip()
 
 # =========================
-# CLEANING
+# CLEAN + FEATURES
 # =========================
-df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+df_clean = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"]).copy()
 
-df.replace(["NaN", "nan", "-", "?"], np.nan, inplace=True)
+df_clean["avg_base"] = (df_clean["Base1 (m)"] + df_clean["Base2 (m)"]) / 2
+df_clean["aspect_ratio"] = df_clean["Height (m)"] / df_clean["avg_base"]
+df_clean["footprint_diff"] = abs(df_clean["Base1 (m)"] - df_clean["Base2 (m)"])
 
-numeric_cols = ['base1_(m)', 'base2_(m)', 'height_(m)', 'slope_(dec_degr)', 'volume_(cu.m)']
-for col in numeric_cols:
-    df[col] = pd.to_numeric(df[col], errors='coerce')
-
-# Fill slope
-df['slope_(dec_degr)'] = df['slope_(dec_degr)'].fillna(
-    np.degrees(np.arctan(df['height_(m)'] / ((df['base1_(m)'] + df['base2_(m)']) / 4)))
-)
-
-# Clean text
-for col in ['pharaoh', 'ancient_name', 'modern_name', 'site', 'type']:
-    df[col] = df[col].astype(str).str.lower().str.strip()
+features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio", "footprint_diff"]
 
 # =========================
-# FEATURE ENGINEERING
+# SCALE
 # =========================
-df['avg_base'] = (df['base1_(m)'] + df['base2_(m)']) / 2
-df['aspect_ratio'] = df['height_(m)'] / df['avg_base']
-df['footprint_diff'] = abs(df['base1_(m)'] - df['base2_(m)'])
-
-# =========================
-# ML PREP
-# =========================
-features = ['base1_(m)', 'base2_(m)', 'height_(m)', 'aspect_ratio', 'footprint_diff']
-ml_df = df[features].dropna()
-
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(ml_df)
+X_scaled = scaler.fit_transform(df_clean[features])
 
-# PCA
-pca = PCA(n_components=2)
+# =========================
+# PCA (3D STRUCTURE SPACE)
+# =========================
+pca = PCA(n_components=3)
 X_pca = pca.fit_transform(X_scaled)
 
-df_pca = pd.DataFrame(X_pca, columns=["PC1", "PC2"])
+df_clean["PC1"] = X_pca[:, 0]
+df_clean["PC2"] = X_pca[:, 1]
+df_clean["PC3"] = X_pca[:, 2]
 
-# Clustering
+# =========================
+# CLUSTER + ANOMALY
+# =========================
 kmeans = KMeans(n_clusters=3, random_state=42)
-df_pca["cluster"] = kmeans.fit_predict(X_pca)
+df_clean["cluster"] = kmeans.fit_predict(X_pca)
 
-# Anomaly detection
 iso = IsolationForest(contamination=0.15, random_state=42)
-df_pca["anomaly"] = iso.fit_predict(X_scaled)
+df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 🌊 NILE CURVE
+# 🌊 NILE RIVER (2D MAP)
 # =========================
-nile_lat = np.linspace(30, 24, 200)
-nile_lon = 31 + 0.8*np.sin(np.linspace(0, 3*np.pi, 200))
+nile_lat = [
+    30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3,
+    27.9, 27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8
+]
+
+nile_lon = [
+    31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20,
+    31.18, 31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02
+]
 
 # =========================
-# 🌍 MAP (FIXED - NO BLACK SCREEN)
+# ZONES
 # =========================
-fig_map = go.Figure()
+df_clean["zone"] = "other"
 
-# Pyramids
-fig_map.add_trace(go.Scattergeo(
-    lat=df["latitude"],
-    lon=df["longitude"],
-    mode="markers",
-    marker=dict(size=8, color="red"),
-    text=df["pharaoh"],
-    name="Pyramids"
-))
+df_clean.loc[
+    df_clean["Site"].str.contains("giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun", case=False, na=False),
+    "zone"
+] = "major_pyramid_zone"
 
-# Nile line
+df_clean.loc[
+    df_clean["Site"].str.contains("abydos|edfu|elephantine|hierakonpolis|dara", case=False, na=False),
+    "zone"
+] = "ancient_upper_egypt_zone"
+
+color_map = {
+    "major_pyramid_zone": "gold",
+    "ancient_upper_egypt_zone": "orange",
+    "other": "lightblue"
+}
+
+# =========================
+# 🗺️ MAP
+# =========================
+st.subheader("🗺️ Egypt Civilization Map with Nile River")
+
+fig_map = px.scatter_geo(
+    df_clean,
+    lat="Latitude",
+    lon="Longitude",
+    hover_name="Pharaoh",
+    hover_data=["Site", "Base1 (m)", "Height (m)", "zone"],
+    color="zone",
+    color_discrete_map=color_map,
+    projection="natural earth"
+)
+
 fig_map.add_trace(go.Scattergeo(
     lat=nile_lat,
     lon=nile_lon,
     mode="lines",
-    line=dict(width=4, color="blue"),
+    line=dict(width=3, color="blue"),
     name="Nile River"
 ))
 
-# Shimmer effect (SAFE)
-fig_map.add_trace(go.Scattergeo(
-    lat=nile_lat,
-    lon=nile_lon,
-    mode="markers",
-    marker=dict(size=6, color="cyan", opacity=0.4),
-    showlegend=False
-))
-
 fig_map.update_layout(
-    title="🌍 Egypt Pyramid Map",
     geo=dict(
-        scope="africa",
-        projection_type="natural earth",
         showland=True,
-        landcolor="rgb(240,230,200)",
+        landcolor="rgb(235,235,235)",
+        showocean=True,
+        oceancolor="rgb(210,230,255)",
         showcountries=True,
-        lataxis_range=[20, 35],
-        lonaxis_range=[25, 35]
-    )
+        center=dict(lat=26.8, lon=31.0),
+        projection_scale=4.5
+    ),
+    height=650
 )
 
-fig_map.show()
-
 # =========================
-# 🏜️ 3D PYRAMID SPACE (FIXED)
+# 🌌 PCA 3D STRUCTURE
 # =========================
-fig_geo3d = go.Figure()
+st.subheader("🌌 3D Pyramid Structural Space")
 
-fig_geo3d.add_trace(go.Scatter3d(
-    x=df["longitude"],
-    y=df["latitude"],
-    z=df["height_(m)"].fillna(0),  # FIX
-    mode="markers",
-    marker=dict(size=5, color=df["height_(m)"].fillna(0), colorscale="Viridis"),
-    text=df["pharaoh"]
+colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
+
+fig_3d = go.Figure()
+
+fig_3d.add_trace(go.Scatter3d(
+    x=df_clean["PC1"],
+    y=df_clean["PC2"],
+    z=df_clean["PC3"],
+    mode="markers+text",
+    text=df_clean["Pharaoh"],
+    textposition="top center",
+    marker=dict(size=5, color=colors, opacity=0.8)
 ))
 
-# 3D Nile
+fig_3d.update_layout(
+    scene=dict(
+        xaxis_title="PC1",
+        yaxis_title="PC2",
+        zaxis_title="PC3"
+    ),
+    height=600
+)
+
+# =========================
+# SIDE BY SIDE
+# =========================
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(fig_map, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig_3d, use_container_width=True)
+
+# =========================
+# 🌊 NEW: 3D NILE + GEO VIEW
+# =========================
+st.subheader("🌊 3D Nile River + Pyramid Geography")
+
+fig_geo3d = go.Figure()
+
+# Nile
 fig_geo3d.add_trace(go.Scatter3d(
     x=nile_lon,
     y=nile_lat,
     z=[0]*len(nile_lat),
     mode="lines",
-    line=dict(color="blue", width=6)
+    line=dict(color="blue", width=6),
+    name="Nile River"
 ))
 
-# 3D shimmer
+# pyramids
 fig_geo3d.add_trace(go.Scatter3d(
-    x=nile_lon,
-    y=nile_lat,
-    z=[2]*len(nile_lat),
-    mode="markers",
-    marker=dict(size=2, color="cyan", opacity=0.4)
+    x=df_clean["Longitude"],
+    y=df_clean["Latitude"],
+    z=df_clean["Height (m)"],
+    mode="markers+text",
+    text=df_clean["Pharaoh"],
+    textposition="top center",
+    marker=dict(size=5, color="gold"),
+    name="Pyramids"
 ))
+
+# vertical lines
+for i in range(len(df_clean)):
+    fig_geo3d.add_trace(go.Scatter3d(
+        x=[df_clean["Longitude"].iloc[i], df_clean["Longitude"].iloc[i]],
+        y=[df_clean["Latitude"].iloc[i], df_clean["Latitude"].iloc[i]],
+        z=[0, df_clean["Height (m)"].iloc[i]],
+        mode="lines",
+        line=dict(color="gray", width=1),
+        showlegend=False
+    ))
 
 fig_geo3d.update_layout(
-    title="🏜️ 3D Pyramid Structural Space",
-    height=700
+    scene=dict(
+        xaxis_title="Longitude",
+        yaxis_title="Latitude",
+        zaxis_title="Height"
+    ),
+    height=650
 )
 
-fig_geo3d.show()
+st.plotly_chart(fig_geo3d, use_container_width=True)
 
 # =========================
-# 🏺 DYNASTY TIMELINE
+# 🏗️ PYRAMID BUILDER
 # =========================
-df["dynasty"] = pd.to_numeric(df["dynasty"], errors="coerce")
+st.subheader("🏗️ Pyramid 3D Builder")
 
-timeline = df.groupby("dynasty").size().reset_index(name="count")
+selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
+row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
 
-fig_timeline = go.Figure()
+base = float(row["Base1 (m)"])
+height = float(row["Height (m)"])
+half = base / 2
 
-fig_timeline.add_trace(go.Scatter(
-    x=timeline["dynasty"],
-    y=timeline["count"],
-    mode="lines+markers"
+fig_pyr = go.Figure()
+
+fig_pyr.add_trace(go.Mesh3d(
+    x=[-half, half, half, -half],
+    y=[-half, -half, half, half],
+    z=[0, 0, 0, 0],
+    opacity=0.4,
+    color="tan"
 ))
 
-fig_timeline.update_layout(
-    title="🏺 Pyramid Evolution Across Dynasties",
-    xaxis_title="Dynasty",
-    yaxis_title="Count",
-    height=500
-)
+apex = (0, 0, height)
 
-fig_timeline.show()
+for x, y in [(-half, -half), (half, -half), (half, half), (-half, half)]:
+    fig_pyr.add_trace(go.Scatter3d(
+        x=[x, apex[0]],
+        y=[y, apex[1]],
+        z=[0, apex[2]],
+        mode="lines",
+        line=dict(color="brown", width=4)
+    ))
+
+fig_pyr.update_layout(height=600)
+
+st.plotly_chart(fig_pyr, use_container_width=True)
 
 # =========================
-# 📈 HEIGHT EVOLUTION
+# 🧠 INSIGHTS
 # =========================
-fig_height = go.Figure()
+st.subheader("🧠 Key Insights")
 
-fig_height.add_trace(go.Scatter(
-    x=df["dynasty"],
-    y=df["height_(m)"],
-    mode="markers",
-    marker=dict(
-        size=10,
-        color=df["height_(m)"],
-        colorscale="Viridis",
-        showscale=True
-    )
-))
-
-fig_height.update_layout(
-    title="📈 Pyramid Height Evolution",
-    xaxis_title="Dynasty",
-    yaxis_title="Height (m)",
-    height=500
-)
-
-fig_height.show()
+st.write("""
+- Pyramid construction follows the Nile corridor
+- Giza–Saqqara–Dahshur is the core engineering zone
+- Structures are geometrically consistent overall
+- Outliers reflect experimentation or transition phases
+- Civilization shows strong river-based spatial logic
+""")
