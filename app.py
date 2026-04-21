@@ -14,8 +14,8 @@ from sklearn.ensemble import IsolationForest
 # =========================
 st.set_page_config(page_title="Pyramid Atlas", layout="wide")
 
-st.title("🏺 Ancient Egypt Pyramid Atlas")
-st.write("Geometric + Geographic Intelligence System for Pyramid Structures")
+st.title("🏺 Ancient Egypt Pyramid Intelligence Atlas")
+st.write("A computational archaeology system mapping geometry + geography + anomalies")
 
 # =========================
 # LOAD DATA
@@ -24,7 +24,7 @@ df = pd.read_csv("pyramids.csv")
 df.columns = df.columns.str.strip()
 
 # =========================
-# CLEAN + FEATURES
+# CLEAN + FEATURE ENGINEERING
 # =========================
 df_clean = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"]).copy()
 
@@ -35,13 +35,13 @@ df_clean["footprint_diff"] = abs(df_clean["Base1 (m)"] - df_clean["Base2 (m)"])
 features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio", "footprint_diff"]
 
 # =========================
-# SCALING
+# SCALE
 # =========================
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df_clean[features])
 
 # =========================
-# PCA (3D SPACE)
+# PCA (3D STRUCTURE SPACE)
 # =========================
 pca = PCA(n_components=3)
 X_pca = pca.fit_transform(X_scaled)
@@ -51,7 +51,7 @@ df_clean["PC2"] = X_pca[:, 1]
 df_clean["PC3"] = X_pca[:, 2]
 
 # =========================
-# CLUSTER + ANOMALY DETECTION
+# CLUSTER + ANOMALY
 # =========================
 kmeans = KMeans(n_clusters=3, random_state=42)
 df_clean["cluster"] = kmeans.fit_predict(X_pca)
@@ -60,35 +60,73 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# COLORS
+# 🌍 CIVILIZATION ZONES (MAP LOGIC)
 # =========================
-colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
+df_clean["zone"] = "other"
+
+df_clean.loc[
+    df_clean["Site"].str.contains(
+        "giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun|south saqqara|north saqqara",
+        case=False, na=False
+    ),
+    "zone"
+] = "major_pyramid_zone"
+
+df_clean.loc[
+    df_clean["Site"].str.contains(
+        "abydos|edfu|elephantine|hierakonpolis|dara",
+        case=False, na=False
+    ),
+    "zone"
+] = "ancient_upper_egypt_zone"
+
+# COLORS
+color_map = {
+    "major_pyramid_zone": "gold",
+    "ancient_upper_egypt_zone": "orange",
+    "other": "lightblue"
+}
+
+df_clean["color"] = df_clean["zone"].map(color_map)
 
 # =========================
-# 🌍 EGYPT MAP VIEW
+# 🗺️ EGYPT MAP VIEW
 # =========================
-st.subheader("🗺️ Geographic Distribution of Pyramids (Egypt Map)")
+st.subheader("🗺️ Civilization & Pyramid Distribution Map")
 
 fig_map = px.scatter_geo(
     df_clean,
     lat="Latitude",
     lon="Longitude",
     hover_name="Pharaoh",
-    hover_data=["Base1 (m)", "Height (m)", "Site"],
+    hover_data=["Site", "Base1 (m)", "Height (m)", "zone"],
+    color="zone",
+    color_discrete_map=color_map,
     projection="natural earth"
 )
 
 fig_map.update_layout(
     title=dict(
-        text="🏺 Pyramid Locations Across Ancient Egypt",
-        font=dict(size=26)
+        text="🏺 Ancient Egypt Civilization Zones & Pyramid Sites",
+        font=dict(size=28)
     ),
-    height=500
+    geo=dict(
+        showland=True,
+        landcolor="rgb(235, 235, 235)",
+        showcountries=True,
+        showocean=True,
+        oceancolor="rgb(210, 230, 255)",
+        center=dict(lat=26.8, lon=31.0),
+        projection_scale=4.5
+    ),
+    height=650
 )
 
 # =========================
 # 🌌 3D STRUCTURAL SPACE
 # =========================
+colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
+
 fig_3d = go.Figure()
 
 fig_3d.add_trace(go.Scatter3d(
@@ -98,16 +136,12 @@ fig_3d.add_trace(go.Scatter3d(
     mode="markers+text",
     text=df_clean["Pharaoh"],
     textposition="top center",
-    marker=dict(
-        size=6,
-        color=colors,
-        opacity=0.85
-    )
+    marker=dict(size=6, color=colors, opacity=0.85)
 ))
 
 fig_3d.update_layout(
     title=dict(
-        text="🏺 3D Pyramid Structural Space",
+        text="🏺 3D Pyramid Structural Intelligence Space",
         font=dict(size=30)
     ),
     scene=dict(
@@ -115,7 +149,7 @@ fig_3d.update_layout(
         yaxis_title="Structural Axis 2",
         zaxis_title="Structural Depth"
     ),
-    height=550,
+    height=600,
     margin=dict(l=0, r=0, b=0, t=80)
 )
 
@@ -131,9 +165,9 @@ with col2:
     st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
-# INDIVIDUAL PYRAMID VIEWER
+# 🏗️ INDIVIDUAL PYRAMID VIEWER
 # =========================
-st.subheader("🏗️ 3D Pyramid Builder (Individual Structure Viewer)")
+st.subheader("🏗️ Pyramid 3D Builder")
 
 selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
 row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
@@ -144,7 +178,6 @@ half = base / 2
 
 fig_pyr = go.Figure()
 
-# base square
 fig_pyr.add_trace(go.Mesh3d(
     x=[-half, half, half, -half],
     y=[-half, -half, half, half],
@@ -188,14 +221,14 @@ fig_pyr.update_layout(
 st.plotly_chart(fig_pyr, use_container_width=True)
 
 # =========================
-# INSIGHT SECTION
+# 🧠 INSIGHT PANEL
 # =========================
-st.subheader("🧠 Research Insight Summary")
+st.subheader("🧠 Archaeological Intelligence Insight")
 
 st.write("""
-- Pyramid distribution follows a strong Nile-centered geographic clustering  
-- Structural space shows continuous variation, not discrete architectural classes  
-- Anomalies represent experimental or transitional construction phases  
-- Geometry is primarily driven by base size and scaling relationships  
-- Ancient Egyptian architecture behaves like a stable evolutionary system  
+- Egypt shows strong **Nile-centered civilization clustering**
+- Pyramid construction is highly concentrated in **Giza–Saqqara–Dahshur corridor**
+- Structural geometry forms a **continuous evolutionary system, not separate categories**
+- Anomalies represent **experimental architectural phases or transitional dynasties**
+- Ancient Egypt behaves like a **stable engineering civilization with regional expansion nodes**
 """)
