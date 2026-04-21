@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.graph_objects as go
 
 from sklearn.preprocessing import StandardScaler
@@ -13,180 +11,151 @@ from sklearn.ensemble import IsolationForest
 # =========================
 # CONFIG
 # =========================
-st.set_page_config(page_title="Pyramid Explorer", layout="wide")
+st.set_page_config(page_title="Pyramid Atlas", layout="wide")
 
-st.title("🏺 Ancient Pyramid 3D Geometry Explorer")
-st.write("Interactive ML + 3D reconstruction of pyramid structures")
+st.title("🏺 Ancient Pyramid 3D Atlas")
+st.write("A geometric intelligence system mapping ancient Egyptian pyramid structures")
 
 # =========================
 # LOAD DATA
 # =========================
 df = pd.read_csv("pyramids.csv")
-
-# clean column names (important fix)
 df.columns = df.columns.str.strip()
 
-st.subheader("📊 Dataset Preview")
-st.dataframe(df.head())
-
 # =========================
-# FEATURE ENGINEERING
+# CLEAN + FEATURES
 # =========================
-features = ['Base1 (m)', 'Base2 (m)', 'Height (m)']
-df_clean = df.dropna(subset=features).copy()
+df_clean = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"]).copy()
 
 df_clean["avg_base"] = (df_clean["Base1 (m)"] + df_clean["Base2 (m)"]) / 2
 df_clean["aspect_ratio"] = df_clean["Height (m)"] / df_clean["avg_base"]
 df_clean["footprint_diff"] = abs(df_clean["Base1 (m)"] - df_clean["Base2 (m)"])
 
-ml_features = ['Base1 (m)', 'Base2 (m)', 'Height (m)', 'aspect_ratio', 'footprint_diff']
+features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio", "footprint_diff"]
 
 # =========================
-# SCALING
+# SCALE + PCA (FOR 3D SPACE)
 # =========================
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(df_clean[ml_features])
+X_scaled = scaler.fit_transform(df_clean[features])
 
-# =========================
-# PCA
-# =========================
-pca = PCA(n_components=2)
+pca = PCA(n_components=3)   # 👈 upgraded to 3D
 X_pca = pca.fit_transform(X_scaled)
 
 df_clean["PC1"] = X_pca[:, 0]
 df_clean["PC2"] = X_pca[:, 1]
+df_clean["PC3"] = X_pca[:, 2]
 
 # =========================
-# CLUSTERING
+# CLUSTERING + ANOMALY (kept but hidden logic only)
 # =========================
 kmeans = KMeans(n_clusters=3, random_state=42)
 df_clean["cluster"] = kmeans.fit_predict(X_pca)
 
-# =========================
-# ANOMALY DETECTION
-# =========================
 iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 3D PYRAMID FUNCTION
+# 3D GEOMETRIC INTELLIGENCE MAP
 # =========================
-def draw_pyramid(base, height):
-    half = base / 2
+st.subheader("🌌 3D Pyramid Structural Space")
 
-    fig = go.Figure()
+color_map = []
+for i in df_clean["anomaly"]:
+    if i == -1:
+        color_map.append("red")   # anomaly = red
+    else:
+        color_map.append("gold")  # normal = gold
 
-    # base square
-    fig.add_trace(go.Mesh3d(
-        x=[-half, half, half, -half],
-        y=[-half, -half, half, half],
-        z=[0, 0, 0, 0],
-        color="tan",
-        opacity=0.5
-    ))
+fig = go.Figure()
 
-    # apex
-    apex = (0, 0, height)
-
-    base_points = [
-        (-half, -half, 0),
-        (half, -half, 0),
-        (half, half, 0),
-        (-half, half, 0)
-    ]
-
-    # pyramid sides
-    for x, y, z in base_points:
-        fig.add_trace(go.Scatter3d(
-            x=[x, apex[0]],
-            y=[y, apex[1]],
-            z=[z, apex[2]],
-            mode="lines",
-            line=dict(color="brown", width=4)
-        ))
-
-    fig.update_layout(
-        title="3D Pyramid Structure",
-        scene=dict(
-            xaxis_title="X",
-            yaxis_title="Y",
-            zaxis_title="Height"
-        ),
-        margin=dict(l=0, r=0, b=0, t=40)
+fig.add_trace(go.Scatter3d(
+    x=df_clean["PC1"],
+    y=df_clean["PC2"],
+    z=df_clean["PC3"],
+    mode="markers+text",
+    text=df_clean["Pharaoh"],
+    textposition="top center",
+    marker=dict(
+        size=6,
+        color=color_map,
+        opacity=0.85
     )
+))
 
-    return fig
-
-# =========================
-# INTERACTIVE 3D VIEW
-# =========================
-st.subheader("🏗️ 3D Pyramid Explorer")
-
-selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
-
-row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
-
-st.write("### 📐 Pyramid Features")
-st.write(row[["Base1 (m)", "Base2 (m)", "Height (m)"]])
-
-fig3d = draw_pyramid(
-    base=float(row["Base1 (m)"]),
-    height=float(row["Height (m)"])
+fig.update_layout(
+    title="Pyramid Geometry in 3D Feature Space",
+    scene=dict(
+        xaxis_title="Structural Axis 1",
+        yaxis_title="Structural Axis 2",
+        zaxis_title="Structural Depth"
+    ),
+    margin=dict(l=0, r=0, b=0, t=40)
 )
 
-st.plotly_chart(fig3d, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# PCA CLUSTERS
+# INTERACTIVE PYRAMID VIEWER
 # =========================
-st.subheader("🧱 Structural Clusters (PCA Space)")
+st.subheader("🏗️ 3D Individual Pyramid Viewer")
 
-fig1, ax1 = plt.subplots()
-ax1.scatter(df_clean["PC1"], df_clean["PC2"], c=df_clean["cluster"])
-ax1.set_title("Pyramid Clusters")
-st.pyplot(fig1)
+selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
+row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
+
+base = float(row["Base1 (m)"])
+height = float(row["Height (m)"])
+half = base / 2
+
+fig2 = go.Figure()
+
+# base
+fig2.add_trace(go.Mesh3d(
+    x=[-half, half, half, -half],
+    y=[-half, -half, half, half],
+    z=[0, 0, 0, 0],
+    color="tan",
+    opacity=0.5
+))
+
+apex = (0, 0, height)
+
+base_points = [
+    (-half, -half, 0),
+    (half, -half, 0),
+    (half, half, 0),
+    (-half, half, 0)
+]
+
+for x, y, z in base_points:
+    fig2.add_trace(go.Scatter3d(
+        x=[x, apex[0]],
+        y=[y, apex[1]],
+        z=[z, apex[2]],
+        mode="lines",
+        line=dict(color="brown", width=5)
+    ))
+
+fig2.update_layout(
+    title=f"3D Structure: {selected}",
+    scene=dict(
+        xaxis_title="X",
+        yaxis_title="Y",
+        zaxis_title="Height"
+    ),
+    margin=dict(l=0, r=0, b=0, t=40)
+)
+
+st.plotly_chart(fig2, use_container_width=True)
 
 # =========================
-# ANOMALIES
+# INSIGHT PANEL (SCHOLARSHIP STYLE)
 # =========================
-st.subheader("🕳️ Structural Anomalies")
-
-fig2, ax2 = plt.subplots()
-ax2.scatter(df_clean["PC1"], df_clean["PC2"], c=df_clean["anomaly"])
-ax2.set_title("Anomaly Detection")
-st.pyplot(fig2)
-
-# =========================
-# SITE DISTRIBUTION
-# =========================
-st.subheader("📍 Pyramid Distribution by Site")
-
-site_counts = df["Site"].value_counts()
-
-fig3, ax3 = plt.subplots(figsize=(10, 5))
-site_counts.plot(kind="bar", ax=ax3)
-ax3.set_ylabel("Count")
-ax3.set_title("Site Distribution")
-plt.xticks(rotation=45)
-st.pyplot(fig3)
-
-# =========================
-# CORRELATION HEATMAP
-# =========================
-st.subheader("📊 Correlation Heatmap")
-
-fig4, ax4 = plt.subplots(figsize=(7, 5))
-sns.heatmap(df[ml_features].corr(), annot=True, cmap="coolwarm", ax=ax4)
-st.pyplot(fig4)
-
-# =========================
-# INSIGHT PANEL
-# =========================
-st.subheader("🧠 Key Insight")
+st.subheader("🧠 Geometric Intelligence Insight")
 
 st.write("""
-- Pyramid geometry is highly consistent across Egypt  
-- No strong clustering → continuous architectural evolution  
-- Few anomalies represent experimental or transitional designs  
-- Structure is mainly driven by base geometry and scale  
+- Pyramid structures collapse into a **continuous geometric manifold**, not discrete clusters  
+- Anomalies (red points) represent **architectural deviation zones**, not random errors  
+- PCA reveals that most variance is driven by **scale + base geometry**  
+- Egyptian pyramid design follows a **stable engineering attractor system** across dynasties  
 """)
