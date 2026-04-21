@@ -4,6 +4,9 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
@@ -41,7 +44,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df_clean[features])
 
 # =========================
-# PCA (3D STRUCTURE SPACE)
+# PCA (3D)
 # =========================
 pca = PCA(n_components=3)
 X_pca = pca.fit_transform(X_scaled)
@@ -60,20 +63,13 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 🌊 NILE RIVER (2D MAP)
+# 🌊 NILE RIVER
 # =========================
-nile_lat = [
-    30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3,
-    27.9, 27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8
-]
-
-nile_lon = [
-    31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20,
-    31.18, 31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02
-]
+nile_lat = [30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3, 27.9, 27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8]
+nile_lon = [31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20, 31.18, 31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02]
 
 # =========================
-# ZONES
+# MAP ZONES
 # =========================
 df_clean["zone"] = "other"
 
@@ -117,21 +113,10 @@ fig_map.add_trace(go.Scattergeo(
     name="Nile River"
 ))
 
-fig_map.update_layout(
-    geo=dict(
-        showland=True,
-        landcolor="rgb(235,235,235)",
-        showocean=True,
-        oceancolor="rgb(210,230,255)",
-        showcountries=True,
-        center=dict(lat=26.8, lon=31.0),
-        projection_scale=4.5
-    ),
-    height=650
-)
+fig_map.update_layout(height=650)
 
 # =========================
-# 🌌 PCA 3D STRUCTURE
+# 🌌 3D STRUCTURE SPACE
 # =========================
 st.subheader("🌌 3D Pyramid Structural Space")
 
@@ -145,18 +130,10 @@ fig_3d.add_trace(go.Scatter3d(
     z=df_clean["PC3"],
     mode="markers+text",
     text=df_clean["Pharaoh"],
-    textposition="top center",
-    marker=dict(size=5, color=colors, opacity=0.8)
+    marker=dict(size=5, color=colors)
 ))
 
-fig_3d.update_layout(
-    scene=dict(
-        xaxis_title="PC1",
-        yaxis_title="PC2",
-        zaxis_title="PC3"
-    ),
-    height=600
-)
+fig_3d.update_layout(height=600)
 
 col1, col2 = st.columns(2)
 
@@ -167,9 +144,9 @@ with col2:
     st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
-# 🌊 3D NILE + GEOGRAPHY
+# 🌊 3D NILE VIEW
 # =========================
-st.subheader("🌊 3D Nile River + Pyramid Geography")
+st.subheader("🌊 3D Nile + Pyramid Geography")
 
 fig_geo3d = go.Figure()
 
@@ -179,7 +156,7 @@ fig_geo3d.add_trace(go.Scatter3d(
     z=[0]*len(nile_lat),
     mode="lines",
     line=dict(color="blue", width=6),
-    name="Nile River"
+    name="Nile"
 ))
 
 fig_geo3d.add_trace(go.Scatter3d(
@@ -188,22 +165,10 @@ fig_geo3d.add_trace(go.Scatter3d(
     z=df_clean["Height (m)"],
     mode="markers+text",
     text=df_clean["Pharaoh"],
-    textposition="top center",
-    marker=dict(size=5, color="gold"),
-    name="Pyramids"
+    marker=dict(size=5, color="gold")
 ))
 
-for i in range(len(df_clean)):
-    fig_geo3d.add_trace(go.Scatter3d(
-        x=[df_clean["Longitude"].iloc[i], df_clean["Longitude"].iloc[i]],
-        y=[df_clean["Latitude"].iloc[i], df_clean["Latitude"].iloc[i]],
-        z=[0, df_clean["Height (m)"].iloc[i]],
-        mode="lines",
-        line=dict(color="gray", width=1),
-        showlegend=False
-    ))
-
-fig_geo3d.update_layout(height=650)
+fig_geo3d.update_layout(height=600)
 
 st.plotly_chart(fig_geo3d, use_container_width=True)
 
@@ -225,8 +190,8 @@ fig_pyr.add_trace(go.Mesh3d(
     x=[-half, half, half, -half],
     y=[-half, -half, half, half],
     z=[0, 0, 0, 0],
-    opacity=0.4,
-    color="tan"
+    color="tan",
+    opacity=0.4
 ))
 
 apex = (0, 0, height)
@@ -240,8 +205,6 @@ for x, y in [(-half, -half), (half, -half), (half, half), (-half, half)]:
         line=dict(color="brown", width=4)
     ))
 
-fig_pyr.update_layout(height=600)
-
 st.plotly_chart(fig_pyr, use_container_width=True)
 
 # =========================
@@ -251,57 +214,40 @@ st.subheader("🧠 Key Insights")
 
 st.write("""
 - Pyramid construction follows the Nile corridor  
-- Giza–Saqqara–Dahshur is the core engineering zone  
-- Structures are geometrically consistent overall  
-- Outliers reflect experimentation or transition phases  
-- Civilization shows strong river-based spatial logic  
+- Giza–Saqqara–Dahshur are major engineering hubs  
+- Geometry is mostly consistent with few anomalies  
+- Variation reflects historical evolution, not randomness  
 """)
 
 # =========================
-# 🕰️ FIXED TIMELINE (WORKING)
+# 🕰️ FIXED SEABORN TIMELINE (BC → AD)
 # =========================
-st.subheader("🕰️ Egypt Civilization Evolution Timeline")
+st.subheader("🕰️ Egypt Civilization Timeline (BC → AD)")
 
 timeline_data = pd.DataFrame({
     "Era": [
-        "Prehistoric Egypt",
-        "Early Dynastic Period",
-        "Old Kingdom (Pyramid Age)",
-        "First Intermediate Period",
-        "Middle Kingdom",
-        "Second Intermediate Period",
-        "New Kingdom (Empire Age)",
-        "Late Period",
-        "Ptolemaic Egypt",
-        "Roman Egypt",
-        "Islamic Egypt",
-        "Modern Egypt"
+        "Prehistoric", "Early Dynastic", "Old Kingdom",
+        "First Intermediate", "Middle Kingdom", "Second Intermediate",
+        "New Kingdom", "Late Period", "Ptolemaic", "Roman",
+        "Islamic", "Modern Egypt"
     ],
     "Start": [-6000, -3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800],
     "End":   [-3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800, 2026]
 })
 
-offset = 7000
-timeline_data["Start_adj"] = timeline_data["Start"] + offset
-timeline_data["End_adj"] = timeline_data["End"] + offset
+fig, ax = plt.subplots(figsize=(10, 6))
 
-fig_timeline = px.timeline(
-    timeline_data,
-    x_start="Start_adj",
-    x_end="End_adj",
-    y="Era",
-    color="Era"
-)
+for i, row in timeline_data.iterrows():
+    ax.barh(
+        row["Era"],
+        row["End"] - row["Start"],
+        left=row["Start"],
+        color=sns.color_palette("viridis", len(timeline_data))[i]
+    )
 
-fig_timeline.update_layout(
-    xaxis=dict(
-        tickvals=[0, 2000, 4000, 6000, 8000, 9000],
-        ticktext=["-6000", "-4000", "-2000", "0", "2000", "4000"],
-        title="Years (BC → AD)"
-    ),
-    height=600
-)
+ax.axvline(0, color="black", linestyle="--", linewidth=1)
+ax.set_xlabel("Time (BC → AD)")
+ax.set_title("Egypt Civilization Evolution Timeline")
 
-fig_timeline.update_yaxes(autorange="reversed")
-
-st.plotly_chart(fig_timeline, use_container_width=True)
+plt.tight_layout()
+st.pyplot(fig)
