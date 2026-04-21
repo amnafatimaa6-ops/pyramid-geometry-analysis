@@ -258,7 +258,7 @@ st.write("""
 """)
 
 # =========================
-# 🕰️ EGYPT TIMELINE (ADDED ONLY)
+# 🕰️ FIXED TIMELINE (WORKING)
 # =========================
 st.subheader("🕰️ Egypt Civilization Evolution Timeline")
 
@@ -281,16 +281,27 @@ timeline_data = pd.DataFrame({
     "End":   [-3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800, 2026]
 })
 
+offset = 7000
+timeline_data["Start_adj"] = timeline_data["Start"] + offset
+timeline_data["End_adj"] = timeline_data["End"] + offset
+
 fig_timeline = px.timeline(
     timeline_data,
-    x_start="Start",
-    x_end="End",
+    x_start="Start_adj",
+    x_end="End_adj",
     y="Era",
-    color="Era",
-    title="Egypt Civilization Timeline (Evolution Over Time)"
+    color="Era"
+)
+
+fig_timeline.update_layout(
+    xaxis=dict(
+        tickvals=[0, 2000, 4000, 6000, 8000, 9000],
+        ticktext=["-6000", "-4000", "-2000", "0", "2000", "4000"],
+        title="Years (BC → AD)"
+    ),
+    height=600
 )
 
 fig_timeline.update_yaxes(autorange="reversed")
-fig_timeline.update_layout(height=600)
 
 st.plotly_chart(fig_timeline, use_container_width=True)
