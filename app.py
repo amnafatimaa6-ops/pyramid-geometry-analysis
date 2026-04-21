@@ -60,16 +60,16 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 🌊 NILE RIVER CURVE
+# 🌊 NILE RIVER (2D MAP)
 # =========================
 nile_lat = [
-    30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3, 27.9,
-    27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8
+    30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3,
+    27.9, 27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8
 ]
 
 nile_lon = [
-    31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20, 31.18,
-    31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02
+    31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20,
+    31.18, 31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02
 ]
 
 # =========================
@@ -78,18 +78,12 @@ nile_lon = [
 df_clean["zone"] = "other"
 
 df_clean.loc[
-    df_clean["Site"].str.contains(
-        "giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun",
-        case=False, na=False
-    ),
+    df_clean["Site"].str.contains("giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun", case=False, na=False),
     "zone"
 ] = "major_pyramid_zone"
 
 df_clean.loc[
-    df_clean["Site"].str.contains(
-        "abydos|edfu|elephantine|hierakonpolis|dara",
-        case=False, na=False
-    ),
+    df_clean["Site"].str.contains("abydos|edfu|elephantine|hierakonpolis|dara", case=False, na=False),
     "zone"
 ] = "ancient_upper_egypt_zone"
 
@@ -99,10 +93,8 @@ color_map = {
     "other": "lightblue"
 }
 
-df_clean["color"] = df_clean["zone"].map(color_map)
-
 # =========================
-# 🗺️ MAP + NILE
+# 🗺️ MAP
 # =========================
 st.subheader("🗺️ Egypt Civilization Map with Nile River")
 
@@ -117,16 +109,13 @@ fig_map = px.scatter_geo(
     projection="natural earth"
 )
 
-# 🌊 Nile River Line
-fig_map.add_trace(
-    go.Scattergeo(
-        lat=nile_lat,
-        lon=nile_lon,
-        mode="lines",
-        line=dict(width=3, color="blue"),
-        name="Nile River"
-    )
-)
+fig_map.add_trace(go.Scattergeo(
+    lat=nile_lat,
+    lon=nile_lon,
+    mode="lines",
+    line=dict(width=3, color="blue"),
+    name="Nile River"
+))
 
 fig_map.update_layout(
     geo=dict(
@@ -142,7 +131,7 @@ fig_map.update_layout(
 )
 
 # =========================
-# 🌌 3D STRUCTURE SPACE
+# 🌌 PCA 3D STRUCTURE
 # =========================
 st.subheader("🌌 3D Pyramid Structural Space")
 
@@ -181,9 +170,60 @@ with col2:
     st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
+# 🌊 NEW: 3D NILE + GEO VIEW
+# =========================
+st.subheader("🌊 3D Nile River + Pyramid Geography")
+
+fig_geo3d = go.Figure()
+
+# Nile
+fig_geo3d.add_trace(go.Scatter3d(
+    x=nile_lon,
+    y=nile_lat,
+    z=[0]*len(nile_lat),
+    mode="lines",
+    line=dict(color="blue", width=6),
+    name="Nile River"
+))
+
+# pyramids
+fig_geo3d.add_trace(go.Scatter3d(
+    x=df_clean["Longitude"],
+    y=df_clean["Latitude"],
+    z=df_clean["Height (m)"],
+    mode="markers+text",
+    text=df_clean["Pharaoh"],
+    textposition="top center",
+    marker=dict(size=5, color="gold"),
+    name="Pyramids"
+))
+
+# vertical lines
+for i in range(len(df_clean)):
+    fig_geo3d.add_trace(go.Scatter3d(
+        x=[df_clean["Longitude"].iloc[i], df_clean["Longitude"].iloc[i]],
+        y=[df_clean["Latitude"].iloc[i], df_clean["Latitude"].iloc[i]],
+        z=[0, df_clean["Height (m)"].iloc[i]],
+        mode="lines",
+        line=dict(color="gray", width=1),
+        showlegend=False
+    ))
+
+fig_geo3d.update_layout(
+    scene=dict(
+        xaxis_title="Longitude",
+        yaxis_title="Latitude",
+        zaxis_title="Height"
+    ),
+    height=650
+)
+
+st.plotly_chart(fig_geo3d, use_container_width=True)
+
+# =========================
 # 🏗️ PYRAMID BUILDER
 # =========================
-st.subheader("🏗️ Individual Pyramid 3D Builder")
+st.subheader("🏗️ Pyramid 3D Builder")
 
 selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
 row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
@@ -223,9 +263,9 @@ st.plotly_chart(fig_pyr, use_container_width=True)
 st.subheader("🧠 Key Insights")
 
 st.write("""
-- Pyramids cluster strongly along the Nile corridor
-- Giza–Saqqara–Dahshur forms the architectural core zone
-- Geometry shows continuity, not discrete structural classes
-- Anomalies reflect experimental or transitional construction phases
-- Civilization is spatially constrained to river-based development
+- Pyramid construction follows the Nile corridor
+- Giza–Saqqara–Dahshur is the core engineering zone
+- Structures are geometrically consistent overall
+- Outliers reflect experimentation or transition phases
+- Civilization shows strong river-based spatial logic
 """)
