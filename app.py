@@ -219,35 +219,38 @@ st.write("""
 - Variation reflects historical evolution, not randomness  
 """)
 
-# =========================
-# 🕰️ FIXED SEABORN TIMELINE (BC → AD)
-# =========================
-st.subheader("🕰️ Egypt Civilization Timeline (BC → AD)")
+# ==========================================================
+# 🏺🔥 ADDED FEATURE: ANIMATED DYNASTY EVOLUTION (NO CHANGES ABOVE)
+# ==========================================================
 
-timeline_data = pd.DataFrame({
-    "Era": [
-        "Prehistoric", "Early Dynastic", "Old Kingdom",
-        "First Intermediate", "Middle Kingdom", "Second Intermediate",
-        "New Kingdom", "Late Period", "Ptolemaic", "Roman",
-        "Islamic", "Modern Egypt"
-    ],
-    "Start": [-6000, -3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800],
-    "End":   [-3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800, 2026]
-})
+st.subheader("🏺 Animated Pyramid Construction Evolution Across Dynasties")
 
-fig, ax = plt.subplots(figsize=(10, 6))
+df_anim = df_clean.copy()
+df_anim["Dynasty"] = pd.to_numeric(df_anim["Dynasty"], errors="coerce")
 
-for i, row in timeline_data.iterrows():
-    ax.barh(
-        row["Era"],
-        row["End"] - row["Start"],
-        left=row["Start"],
-        color=sns.color_palette("viridis", len(timeline_data))[i]
-    )
+df_anim["height_norm"] = df_anim["Height (m)"] / df_anim["Height (m)"].max()
 
-ax.axvline(0, color="black", linestyle="--", linewidth=1)
-ax.set_xlabel("Time (BC → AD)")
-ax.set_title("Egypt Civilization Evolution Timeline")
+fig_evo = px.scatter_3d(
+    df_anim,
+    x="Longitude",
+    y="Latitude",
+    z="Height (m)",
+    color="Dynasty",
+    animation_frame="Dynasty",
+    hover_name="Pharaoh",
+    hover_data=["Site", "Height (m)", "Base1 (m)"],
+    size="height_norm",
+    size_max=12,
+    title="🏺 Pyramid Evolution Through Dynasties (Animated)"
+)
 
-plt.tight_layout()
-st.pyplot(fig)
+fig_evo.update_layout(
+    scene=dict(
+        xaxis_title="Longitude",
+        yaxis_title="Latitude",
+        zaxis_title="Height (m)"
+    ),
+    height=700
+)
+
+st.plotly_chart(fig_evo, use_container_width=True)
