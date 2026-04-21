@@ -158,9 +158,6 @@ fig_3d.update_layout(
     height=600
 )
 
-# =========================
-# SIDE BY SIDE
-# =========================
 col1, col2 = st.columns(2)
 
 with col1:
@@ -170,13 +167,12 @@ with col2:
     st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
-# 🌊 NEW: 3D NILE + GEO VIEW
+# 🌊 3D NILE + GEOGRAPHY
 # =========================
 st.subheader("🌊 3D Nile River + Pyramid Geography")
 
 fig_geo3d = go.Figure()
 
-# Nile
 fig_geo3d.add_trace(go.Scatter3d(
     x=nile_lon,
     y=nile_lat,
@@ -186,7 +182,6 @@ fig_geo3d.add_trace(go.Scatter3d(
     name="Nile River"
 ))
 
-# pyramids
 fig_geo3d.add_trace(go.Scatter3d(
     x=df_clean["Longitude"],
     y=df_clean["Latitude"],
@@ -198,7 +193,6 @@ fig_geo3d.add_trace(go.Scatter3d(
     name="Pyramids"
 ))
 
-# vertical lines
 for i in range(len(df_clean)):
     fig_geo3d.add_trace(go.Scatter3d(
         x=[df_clean["Longitude"].iloc[i], df_clean["Longitude"].iloc[i]],
@@ -209,14 +203,7 @@ for i in range(len(df_clean)):
         showlegend=False
     ))
 
-fig_geo3d.update_layout(
-    scene=dict(
-        xaxis_title="Longitude",
-        yaxis_title="Latitude",
-        zaxis_title="Height"
-    ),
-    height=650
-)
+fig_geo3d.update_layout(height=650)
 
 st.plotly_chart(fig_geo3d, use_container_width=True)
 
@@ -263,9 +250,47 @@ st.plotly_chart(fig_pyr, use_container_width=True)
 st.subheader("🧠 Key Insights")
 
 st.write("""
-- Pyramid construction follows the Nile corridor
-- Giza–Saqqara–Dahshur is the core engineering zone
-- Structures are geometrically consistent overall
-- Outliers reflect experimentation or transition phases
-- Civilization shows strong river-based spatial logic
+- Pyramid construction follows the Nile corridor  
+- Giza–Saqqara–Dahshur is the core engineering zone  
+- Structures are geometrically consistent overall  
+- Outliers reflect experimentation or transition phases  
+- Civilization shows strong river-based spatial logic  
 """)
+
+# =========================
+# 🕰️ EGYPT TIMELINE (ADDED ONLY)
+# =========================
+st.subheader("🕰️ Egypt Civilization Evolution Timeline")
+
+timeline_data = pd.DataFrame({
+    "Era": [
+        "Prehistoric Egypt",
+        "Early Dynastic Period",
+        "Old Kingdom (Pyramid Age)",
+        "First Intermediate Period",
+        "Middle Kingdom",
+        "Second Intermediate Period",
+        "New Kingdom (Empire Age)",
+        "Late Period",
+        "Ptolemaic Egypt",
+        "Roman Egypt",
+        "Islamic Egypt",
+        "Modern Egypt"
+    ],
+    "Start": [-6000, -3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800],
+    "End":   [-3100, -2686, -2181, -2055, -1650, -1550, -664, -332, -30, 640, 1800, 2026]
+})
+
+fig_timeline = px.timeline(
+    timeline_data,
+    x_start="Start",
+    x_end="End",
+    y="Era",
+    color="Era",
+    title="Egypt Civilization Timeline (Evolution Over Time)"
+)
+
+fig_timeline.update_yaxes(autorange="reversed")
+fig_timeline.update_layout(height=600)
+
+st.plotly_chart(fig_timeline, use_container_width=True)
