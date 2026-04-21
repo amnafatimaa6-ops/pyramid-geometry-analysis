@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -13,8 +14,8 @@ from sklearn.ensemble import IsolationForest
 # =========================
 st.set_page_config(page_title="Pyramid Atlas", layout="wide")
 
-st.title("🏺 Ancient Pyramid 3D Atlas")
-st.write("Geometric intelligence mapping of ancient Egyptian pyramid structures")
+st.title("🏺 Ancient Egypt Pyramid Atlas")
+st.write("Geometric + Geographic Intelligence System for Pyramid Structures")
 
 # =========================
 # LOAD DATA
@@ -34,7 +35,7 @@ df_clean["footprint_diff"] = abs(df_clean["Base1 (m)"] - df_clean["Base2 (m)"])
 features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio", "footprint_diff"]
 
 # =========================
-# SCALE
+# SCALING
 # =========================
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df_clean[features])
@@ -50,7 +51,7 @@ df_clean["PC2"] = X_pca[:, 1]
 df_clean["PC3"] = X_pca[:, 2]
 
 # =========================
-# CLUSTER + ANOMALY
+# CLUSTER + ANOMALY DETECTION
 # =========================
 kmeans = KMeans(n_clusters=3, random_state=42)
 df_clean["cluster"] = kmeans.fit_predict(X_pca)
@@ -59,18 +60,38 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# COLOR MAP
+# COLORS
 # =========================
 colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
 
 # =========================
-# 3D STRUCTURAL SPACE
+# 🌍 EGYPT MAP VIEW
 # =========================
-st.subheader("🌌 3D Pyramid Structural Space")
+st.subheader("🗺️ Geographic Distribution of Pyramids (Egypt Map)")
 
-fig = go.Figure()
+fig_map = px.scatter_geo(
+    df_clean,
+    lat="Latitude",
+    lon="Longitude",
+    hover_name="Pharaoh",
+    hover_data=["Base1 (m)", "Height (m)", "Site"],
+    projection="natural earth"
+)
 
-fig.add_trace(go.Scatter3d(
+fig_map.update_layout(
+    title=dict(
+        text="🏺 Pyramid Locations Across Ancient Egypt",
+        font=dict(size=26)
+    ),
+    height=500
+)
+
+# =========================
+# 🌌 3D STRUCTURAL SPACE
+# =========================
+fig_3d = go.Figure()
+
+fig_3d.add_trace(go.Scatter3d(
     x=df_clean["PC1"],
     y=df_clean["PC2"],
     z=df_clean["PC3"],
@@ -84,26 +105,35 @@ fig.add_trace(go.Scatter3d(
     )
 ))
 
-fig.update_layout(
+fig_3d.update_layout(
     title=dict(
         text="🏺 3D Pyramid Structural Space",
-        font=dict(size=32)
+        font=dict(size=30)
     ),
     scene=dict(
         xaxis_title="Structural Axis 1",
         yaxis_title="Structural Axis 2",
         zaxis_title="Structural Depth"
     ),
-    margin=dict(l=0, r=0, b=0, t=100),
-    height=750
+    height=550,
+    margin=dict(l=0, r=0, b=0, t=80)
 )
 
-st.plotly_chart(fig, use_container_width=True)
+# =========================
+# SIDE BY SIDE VIEW
+# =========================
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(fig_map, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
 # INDIVIDUAL PYRAMID VIEWER
 # =========================
-st.subheader("🏗️ 3D Pyramid Viewer")
+st.subheader("🏗️ 3D Pyramid Builder (Individual Structure Viewer)")
 
 selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
 row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
@@ -112,10 +142,10 @@ base = float(row["Base1 (m)"])
 height = float(row["Height (m)"])
 half = base / 2
 
-fig2 = go.Figure()
+fig_pyr = go.Figure()
 
 # base square
-fig2.add_trace(go.Mesh3d(
+fig_pyr.add_trace(go.Mesh3d(
     x=[-half, half, half, -half],
     y=[-half, -half, half, half],
     z=[0, 0, 0, 0],
@@ -133,7 +163,7 @@ base_points = [
 ]
 
 for x, y, z in base_points:
-    fig2.add_trace(go.Scatter3d(
+    fig_pyr.add_trace(go.Scatter3d(
         x=[x, apex[0]],
         y=[y, apex[1]],
         z=[z, apex[2]],
@@ -141,7 +171,7 @@ for x, y, z in base_points:
         line=dict(color="brown", width=5)
     ))
 
-fig2.update_layout(
+fig_pyr.update_layout(
     title=dict(
         text=f"🏺 {selected} - 3D Structure",
         font=dict(size=26)
@@ -151,20 +181,21 @@ fig2.update_layout(
         yaxis_title="Y",
         zaxis_title="Height"
     ),
-    margin=dict(l=0, r=0, b=0, t=80),
-    height=650
+    height=600,
+    margin=dict(l=0, r=0, b=0, t=80)
 )
 
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig_pyr, use_container_width=True)
 
 # =========================
-# INSIGHT PANEL
+# INSIGHT SECTION
 # =========================
-st.subheader("🧠 Key Research Insight")
+st.subheader("🧠 Research Insight Summary")
 
 st.write("""
-- Pyramid geometry forms a continuous structural system rather than discrete clusters  
-- Most variance comes from base size and overall scale  
-- Anomalies represent architectural deviation zones, not noise  
-- Ancient Egyptian construction shows strong geometric consistency across dynasties  
+- Pyramid distribution follows a strong Nile-centered geographic clustering  
+- Structural space shows continuous variation, not discrete architectural classes  
+- Anomalies represent experimental or transitional construction phases  
+- Geometry is primarily driven by base size and scaling relationships  
+- Ancient Egyptian architecture behaves like a stable evolutionary system  
 """)
