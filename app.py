@@ -1,21 +1,32 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
+import plotly.express as px
+import time
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
 from sklearn.ensemble import IsolationForest
 
 # =========================
-# PAGE SETUP
+# PAGE CONFIG (CINEMATIC STYLE)
 # =========================
-st.set_page_config(page_title="Pyramid Atlas", layout="wide")
+st.set_page_config(page_title="Pyramid Cinematic Atlas", layout="wide")
 
-st.title("🏺 Ancient Egypt Pyramid Intelligence Atlas")
-st.write("Geometric + Geographic + Archaeological AI Exploration System")
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: black;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title("🎬 Ancient Egypt: Cinematic Pyramid Intelligence System")
 
 # =========================
 # LOAD DATA
@@ -24,208 +35,186 @@ df = pd.read_csv("pyramids.csv")
 df.columns = df.columns.str.strip()
 
 # =========================
-# CLEAN + FEATURES
+# FEATURE ENGINEERING
 # =========================
-df_clean = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"]).copy()
+df = df.dropna(subset=["Base1 (m)", "Base2 (m)", "Height (m)"])
 
-df_clean["avg_base"] = (df_clean["Base1 (m)"] + df_clean["Base2 (m)"]) / 2
-df_clean["aspect_ratio"] = df_clean["Height (m)"] / df_clean["avg_base"]
-df_clean["footprint_diff"] = abs(df_clean["Base1 (m)"] - df_clean["Base2 (m)"])
+df["avg_base"] = (df["Base1 (m)"] + df["Base2 (m)"]) / 2
+df["aspect_ratio"] = df["Height (m)"] / df["avg_base"]
 
-features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio", "footprint_diff"]
+features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio"]
 
-# =========================
-# SCALE
-# =========================
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(df_clean[features])
+X = StandardScaler().fit_transform(df[features])
 
 # =========================
-# PCA (3D STRUCTURE SPACE)
+# PCA 3D
 # =========================
 pca = PCA(n_components=3)
-X_pca = pca.fit_transform(X_scaled)
+X_pca = pca.fit_transform(X)
 
-df_clean["PC1"] = X_pca[:, 0]
-df_clean["PC2"] = X_pca[:, 1]
-df_clean["PC3"] = X_pca[:, 2]
-
-# =========================
-# CLUSTER + ANOMALY
-# =========================
-kmeans = KMeans(n_clusters=3, random_state=42)
-df_clean["cluster"] = kmeans.fit_predict(X_pca)
-
-iso = IsolationForest(contamination=0.15, random_state=42)
-df_clean["anomaly"] = iso.fit_predict(X_scaled)
+df["PC1"] = X_pca[:, 0]
+df["PC2"] = X_pca[:, 1]
+df["PC3"] = X_pca[:, 2]
 
 # =========================
-# 🌊 NILE RIVER CURVE
+# ANOMALY DETECTION
 # =========================
-nile_lat = [
-    30.6, 30.2, 29.9, 29.6, 29.3, 29.0, 28.7, 28.3, 27.9,
-    27.5, 27.1, 26.7, 26.3, 25.9, 25.5, 25.1, 24.8
-]
-
-nile_lon = [
-    31.2, 31.25, 31.3, 31.28, 31.26, 31.24, 31.22, 31.20, 31.18,
-    31.16, 31.14, 31.12, 31.10, 31.08, 31.06, 31.04, 31.02
-]
+iso = IsolationForest(contamination=0.12, random_state=42)
+df["anomaly"] = iso.fit_predict(X)
 
 # =========================
-# ZONES
+# 🌊 CINEMATIC NILE FLOW (ANIMATED LOOK)
 # =========================
-df_clean["zone"] = "other"
+nile_lat = np.linspace(30.6, 24.8, 40)
+nile_lon = np.linspace(31.25, 31.02, 40)
 
-df_clean.loc[
-    df_clean["Site"].str.contains(
-        "giza|saqqara|dahshur|abusir|lisht|hawara|el-lahun",
-        case=False, na=False
+# =========================
+# 🎬 SCENE 1 — INTRO TEXT
+# =========================
+st.markdown("## 🎞️ Scene 1: The Civilization Corridor")
+st.write("""
+> “Along a single river, one of history’s greatest engineering civilizations emerged.  
+> This is not random geography — this is structured intelligence shaped by water, survival, and time.”
+""")
+
+# =========================
+# 🌍 MAP (CINEMATIC GLOW STYLE)
+# =========================
+fig_map = go.Figure()
+
+# pyramids glow
+fig_map.add_trace(go.Scattergeo(
+    lat=df["Latitude"],
+    lon=df["Longitude"],
+    mode="markers",
+    marker=dict(
+        size=7,
+        color=df["anomaly"],
+        colorscale="Hot",
+        opacity=0.8
     ),
-    "zone"
-] = "major_pyramid_zone"
+    text=df["Pharaoh"]
+))
 
-df_clean.loc[
-    df_clean["Site"].str.contains(
-        "abydos|edfu|elephantine|hierakonpolis|dara",
-        case=False, na=False
-    ),
-    "zone"
-] = "ancient_upper_egypt_zone"
-
-color_map = {
-    "major_pyramid_zone": "gold",
-    "ancient_upper_egypt_zone": "orange",
-    "other": "lightblue"
-}
-
-df_clean["color"] = df_clean["zone"].map(color_map)
-
-# =========================
-# 🗺️ MAP + NILE
-# =========================
-st.subheader("🗺️ Egypt Civilization Map with Nile River")
-
-fig_map = px.scatter_geo(
-    df_clean,
-    lat="Latitude",
-    lon="Longitude",
-    hover_name="Pharaoh",
-    hover_data=["Site", "Base1 (m)", "Height (m)", "zone"],
-    color="zone",
-    color_discrete_map=color_map,
-    projection="natural earth"
-)
-
-# 🌊 Nile River Line
-fig_map.add_trace(
-    go.Scattergeo(
-        lat=nile_lat,
-        lon=nile_lon,
-        mode="lines",
-        line=dict(width=3, color="blue"),
-        name="Nile River"
-    )
-)
+# nile river (animated illusion via gradient points)
+fig_map.add_trace(go.Scattergeo(
+    lat=nile_lat,
+    lon=nile_lon,
+    mode="lines",
+    line=dict(width=3, color="cyan"),
+    name="Nile River"
+))
 
 fig_map.update_layout(
     geo=dict(
+        projection="natural earth",
         showland=True,
-        landcolor="rgb(235,235,235)",
+        landcolor="rgb(10,10,10)",
+        oceancolor="rgb(0,30,60)",
         showocean=True,
-        oceancolor="rgb(210,230,255)",
-        showcountries=True,
         center=dict(lat=26.8, lon=31.0),
-        projection_scale=4.5
+        projection_scale=4.8
     ),
-    height=650
+    paper_bgcolor="black",
+    height=600
 )
 
-# =========================
-# 🌌 3D STRUCTURE SPACE
-# =========================
-st.subheader("🌌 3D Pyramid Structural Space")
+st.plotly_chart(fig_map, use_container_width=True)
 
-colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
+# =========================
+# 🎬 SCENE 2 — 3D PYRAMID SPACE
+# =========================
+st.markdown("## 🎞️ Scene 2: Hidden Structural Dimension")
+
+st.write("""
+> “When geometry is compressed into higher dimensions, patterns emerge that are invisible in raw space.  
+> This is where anomalies reveal themselves.”
+""")
+
+colors = ["red" if x == -1 else "gold" for x in df["anomaly"]]
 
 fig_3d = go.Figure()
 
 fig_3d.add_trace(go.Scatter3d(
-    x=df_clean["PC1"],
-    y=df_clean["PC2"],
-    z=df_clean["PC3"],
-    mode="markers+text",
-    text=df_clean["Pharaoh"],
-    textposition="top center",
-    marker=dict(size=5, color=colors, opacity=0.8)
+    x=df["PC1"],
+    y=df["PC2"],
+    z=df["PC3"],
+    mode="markers",
+    marker=dict(size=5, color=colors, opacity=0.85)
 ))
 
 fig_3d.update_layout(
     scene=dict(
-        xaxis_title="PC1",
-        yaxis_title="PC2",
-        zaxis_title="PC3"
+        xaxis_title="Structural Axis 1",
+        yaxis_title="Structural Axis 2",
+        zaxis_title="Structural Depth"
     ),
-    height=600
+    paper_bgcolor="black",
+    height=650
 )
 
-# =========================
-# SIDE BY SIDE
-# =========================
-col1, col2 = st.columns(2)
-
-with col1:
-    st.plotly_chart(fig_map, use_container_width=True)
-
-with col2:
-    st.plotly_chart(fig_3d, use_container_width=True)
+st.plotly_chart(fig_3d, use_container_width=True)
 
 # =========================
-# 🏗️ PYRAMID BUILDER
+# 🎬 SCENE 3 — PYRAMID CLOSE-UP
 # =========================
-st.subheader("🏗️ Individual Pyramid 3D Builder")
+st.markdown("## 🎞️ Scene 3: Individual Monument Reconstruction")
 
-selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
-row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
+selected = st.selectbox("Select Pyramid", df["Pharaoh"].unique())
+row = df[df["Pharaoh"] == selected].iloc[0]
 
-base = float(row["Base1 (m)"])
-height = float(row["Height (m)"])
+base = row["Base1 (m)"]
+h = row["Height (m)"]
 half = base / 2
 
 fig_pyr = go.Figure()
 
+# base
 fig_pyr.add_trace(go.Mesh3d(
     x=[-half, half, half, -half],
     y=[-half, -half, half, half],
     z=[0, 0, 0, 0],
-    opacity=0.4,
-    color="tan"
+    color="tan",
+    opacity=0.5
 ))
 
-apex = (0, 0, height)
+apex = (0, 0, h)
 
-for x, y in [(-half, -half), (half, -half), (half, half), (-half, half)]:
+for x, y in [(-half,-half),(half,-half),(half,half),(-half,half)]:
     fig_pyr.add_trace(go.Scatter3d(
         x=[x, apex[0]],
         y=[y, apex[1]],
         z=[0, apex[2]],
         mode="lines",
-        line=dict(color="brown", width=4)
+        line=dict(color="white", width=3)
     ))
 
-fig_pyr.update_layout(height=600)
+fig_pyr.update_layout(
+    paper_bgcolor="black",
+    scene=dict(
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        zaxis=dict(visible=False)
+    ),
+    height=600
+)
 
 st.plotly_chart(fig_pyr, use_container_width=True)
 
 # =========================
-# 🧠 INSIGHTS
+# 🎬 FINAL NARRATION
 # =========================
-st.subheader("🧠 Key Insights")
+st.markdown("## 🎬 Final Narration")
 
-st.write("""
-- Pyramids cluster strongly along the Nile corridor
-- Giza–Saqqara–Dahshur forms the architectural core zone
-- Geometry shows continuity, not discrete structural classes
-- Anomalies reflect experimental or transitional construction phases
-- Civilization is spatially constrained to river-based development
+st.success("""
+Across dynasties, Egypt does not behave like scattered construction —  
+it behaves like a **designed system aligned along a river spine**.
+
+Geometry is consistent.  
+Anomalies are rare.  
+Variation is evolutionary, not chaotic.
+
+This is not just archaeology.
+
+This is **structured civilization engineering over time**.
 """)
