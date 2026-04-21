@@ -9,12 +9,12 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import IsolationForest
 
 # =========================
-# CONFIG
+# PAGE CONFIG
 # =========================
 st.set_page_config(page_title="Pyramid Atlas", layout="wide")
 
 st.title("🏺 Ancient Pyramid 3D Atlas")
-st.write("A geometric intelligence system mapping ancient Egyptian pyramid structures")
+st.write("Geometric intelligence mapping of ancient Egyptian pyramid structures")
 
 # =========================
 # LOAD DATA
@@ -34,12 +34,15 @@ df_clean["footprint_diff"] = abs(df_clean["Base1 (m)"] - df_clean["Base2 (m)"])
 features = ["Base1 (m)", "Base2 (m)", "Height (m)", "aspect_ratio", "footprint_diff"]
 
 # =========================
-# SCALE + PCA (FOR 3D SPACE)
+# SCALE
 # =========================
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df_clean[features])
 
-pca = PCA(n_components=3)   # 👈 upgraded to 3D
+# =========================
+# PCA (3D SPACE)
+# =========================
+pca = PCA(n_components=3)
 X_pca = pca.fit_transform(X_scaled)
 
 df_clean["PC1"] = X_pca[:, 0]
@@ -47,7 +50,7 @@ df_clean["PC2"] = X_pca[:, 1]
 df_clean["PC3"] = X_pca[:, 2]
 
 # =========================
-# CLUSTERING + ANOMALY (kept but hidden logic only)
+# CLUSTER + ANOMALY
 # =========================
 kmeans = KMeans(n_clusters=3, random_state=42)
 df_clean["cluster"] = kmeans.fit_predict(X_pca)
@@ -56,16 +59,14 @@ iso = IsolationForest(contamination=0.15, random_state=42)
 df_clean["anomaly"] = iso.fit_predict(X_scaled)
 
 # =========================
-# 3D GEOMETRIC INTELLIGENCE MAP
+# COLOR MAP
+# =========================
+colors = ["red" if x == -1 else "gold" for x in df_clean["anomaly"]]
+
+# =========================
+# 3D STRUCTURAL SPACE
 # =========================
 st.subheader("🌌 3D Pyramid Structural Space")
-
-color_map = []
-for i in df_clean["anomaly"]:
-    if i == -1:
-        color_map.append("red")   # anomaly = red
-    else:
-        color_map.append("gold")  # normal = gold
 
 fig = go.Figure()
 
@@ -78,27 +79,31 @@ fig.add_trace(go.Scatter3d(
     textposition="top center",
     marker=dict(
         size=6,
-        color=color_map,
+        color=colors,
         opacity=0.85
     )
 ))
 
 fig.update_layout(
-    title="Pyramid Geometry in 3D Feature Space",
+    title=dict(
+        text="🏺 3D Pyramid Structural Space",
+        font=dict(size=32)
+    ),
     scene=dict(
         xaxis_title="Structural Axis 1",
         yaxis_title="Structural Axis 2",
         zaxis_title="Structural Depth"
     ),
-    margin=dict(l=0, r=0, b=0, t=40)
+    margin=dict(l=0, r=0, b=0, t=100),
+    height=750
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# INTERACTIVE PYRAMID VIEWER
+# INDIVIDUAL PYRAMID VIEWER
 # =========================
-st.subheader("🏗️ 3D Individual Pyramid Viewer")
+st.subheader("🏗️ 3D Pyramid Viewer")
 
 selected = st.selectbox("Select Pyramid", df_clean["Pharaoh"].unique())
 row = df_clean[df_clean["Pharaoh"] == selected].iloc[0]
@@ -109,7 +114,7 @@ half = base / 2
 
 fig2 = go.Figure()
 
-# base
+# base square
 fig2.add_trace(go.Mesh3d(
     x=[-half, half, half, -half],
     y=[-half, -half, half, half],
@@ -137,25 +142,29 @@ for x, y, z in base_points:
     ))
 
 fig2.update_layout(
-    title=f"3D Structure: {selected}",
+    title=dict(
+        text=f"🏺 {selected} - 3D Structure",
+        font=dict(size=26)
+    ),
     scene=dict(
         xaxis_title="X",
         yaxis_title="Y",
         zaxis_title="Height"
     ),
-    margin=dict(l=0, r=0, b=0, t=40)
+    margin=dict(l=0, r=0, b=0, t=80),
+    height=650
 )
 
 st.plotly_chart(fig2, use_container_width=True)
 
 # =========================
-# INSIGHT PANEL (SCHOLARSHIP STYLE)
+# INSIGHT PANEL
 # =========================
-st.subheader("🧠 Geometric Intelligence Insight")
+st.subheader("🧠 Key Research Insight")
 
 st.write("""
-- Pyramid structures collapse into a **continuous geometric manifold**, not discrete clusters  
-- Anomalies (red points) represent **architectural deviation zones**, not random errors  
-- PCA reveals that most variance is driven by **scale + base geometry**  
-- Egyptian pyramid design follows a **stable engineering attractor system** across dynasties  
+- Pyramid geometry forms a continuous structural system rather than discrete clusters  
+- Most variance comes from base size and overall scale  
+- Anomalies represent architectural deviation zones, not noise  
+- Ancient Egyptian construction shows strong geometric consistency across dynasties  
 """)
