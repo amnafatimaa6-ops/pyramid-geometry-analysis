@@ -1,4 +1,4 @@
-# pyramid-geometry-analysis
+# Ancient-to-Cosmos Discovery Lab
 Machine Learning for Hidden Pattern Detection in Complex Systems
 
 
@@ -74,7 +74,7 @@ The project follows a full machine learning research pipeline:
 
 --------------------------------------------------------------------------
 
-1. Data Preprocessing
+# 1. Data Preprocessing
 Standardized column names for consistency
 Handled missing and corrupted values
 Converted numerical fields into proper formats
@@ -83,7 +83,7 @@ Normalized categorical text fields for consistency
 
 -------------------------------------------------------------------------------
 
-3. Feature Engineering
+# 2 Feature Engineering
 
 New structural features were created to enhance pattern detection:
 
@@ -95,7 +95,7 @@ These features allow deeper structural comparison between pyramids.
 
 ---------------------------------------------------------------------------------
 
-3. Exploratory Data Analysis (EDA)
+# 3. Exploratory Data Analysis (EDA)
 
 Performed statistical and visual analysis to understand:
 
@@ -110,7 +110,7 @@ Pyramid constructions show strong geometric consistency in base design but high 
 
 ----------------------------------------------------------------------------------------------------------------------
 
-4. Dimensionality Reduction (PCA)
+# 4. Dimensionality Reduction (PCA)
 
 Principal Component Analysis was applied to reduce multi-dimensional geometric data into a lower-dimensional feature space.
 
@@ -134,7 +134,7 @@ Result:
 Pyramid structures form loosely overlapping clusters rather than strict categorical divisions.
 
 -----------------------------------------------------------------------------------------------------------------------------
-6. Anomaly Detection (Isolation Forest)
+# 5. Anomaly Detection (Isolation Forest)
 
 Isolation Forest was used to detect pyramids that deviate significantly from standard geometric patterns.
 
