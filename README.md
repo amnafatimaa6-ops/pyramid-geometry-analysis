@@ -150,7 +150,7 @@ Most pyramids follow a consistent geometric model, with only a few outliers repr
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
-🗺️# Geospatial Analysis
+# Geospatial Analysis🗺️
 
 The dataset was visualized on a geographic map of Egypt including:
 
@@ -162,7 +162,8 @@ Spatial density analysis of construction zones
 
 Pyramid construction is heavily concentrated along the Nile Valley, especially in Giza, Saqqara, and Dahshur regions.
 
-🌊 Nile River Integration
+# Nile River Integration  
+
 
 A geospatial overlay of the Nile River was included to analyze:
 
@@ -170,7 +171,7 @@ Relationship between water access and pyramid placement
 Civilization clustering along fertile regions
 Historical urban planning patterns
 
-🌌 3D Structural Analysis
+# 3D Structural Analysis🌌
 
 A 3D PCA-based visualization was created to represent:
 
@@ -180,7 +181,7 @@ Anomalous structures in reduced feature space
 
 This provides a “scientific landscape” of pyramid geometry.
 
-🏗️ Interactive Pyramid Simulation
+# Interactive Pyramid Simulation 🏗️ 
 
 A custom 3D pyramid builder was implemented to:
 
@@ -188,7 +189,7 @@ Visualize individual pyramid structures
 Reconstruct geometric shapes from dataset parameters
 Allow selection-based exploration of pyramids
 
-🧠 Key Findings
+🧠 Key Findings 
 
 Pyramid construction follows a highly consistent geometric framework
 Base symmetry is strongly preserved across all structures
@@ -198,7 +199,7 @@ Only a small number of structures behave as geometric anomalies
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
-🔬 Scientific Interpretation
+# Scientific Interpretation 🔬 
 
 The results suggest that ancient pyramid architecture was not random but followed structured design principles that evolved over time.
 
@@ -206,7 +207,7 @@ However, instead of forming distinct architectural categories, pyramid structure
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🚀 #Technologies Used
+# Technologies Used 🚀 
 
 Python
 
@@ -222,7 +223,7 @@ Streamlit (interactive dashboard)
 
 ------------------------------------------------------------------------------------------------
 
-🎯 #Future Work
+# Future Work 🎯
 
 Integration with satellite elevation data
 Deep learning-based structural classification
@@ -232,7 +233,7 @@ Temporal modeling of architectural evolution
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🧭 #Research Vision
+ # Research Vision 🧭 
 
 
 This project is part of a broader goal to develop computational systems that can identify hidden structures in complex natural and historical datasets.
@@ -251,6 +252,6 @@ Human behavioral systems
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🧠 Final Note
+# Final Note
 
 This project demonstrates how machine learning can be used not only for prediction, but for scientific exploration and discovery of hidden patterns in real-world systems.
