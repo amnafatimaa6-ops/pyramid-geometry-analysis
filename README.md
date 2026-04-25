@@ -2,7 +2,7 @@
 Machine Learning for Hidden Pattern Detection in Complex Systems
 
 
-🧠 #Project Overview
+# Project Overview 🧠
 
 This project is an interdisciplinary computational research system designed to analyze hidden structural, spatial, and geometric patterns across complex datasets using machine learning.
 
@@ -13,7 +13,7 @@ The system integrates data science, geospatial analysis, anomaly detection, clus
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🎯# Research Purpose
+# Research Purpose 🎯
 
 The main goal of this project is to apply machine learning techniques to uncover hidden patterns in:
 
@@ -29,7 +29,7 @@ Complex systems—whether natural, scientific, or historical—often contain lat
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-🧾 #Dataset Description
+# Dataset Description 🧾
 
 The dataset used in this project contains structured archaeological information about ancient Egyptian pyramids.
 
@@ -68,7 +68,7 @@ Construction material
 -----------------------------------------
 Archaeological classification notes
 ------------------------------------------
-⚙️# Methodology
+# Methodology ⚙️
 
 The project follows a full machine learning research pipeline:
 
