@@ -29,7 +29,7 @@ Complex systems—whether natural, scientific, or historical—often contain lat
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Dashboard Link:
-
+https://pyramid-geometry-analysis-gpvub646xbrhvvwxq7majf.streamlit.app/
 
 ### Demo 1
 
