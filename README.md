@@ -26,6 +26,29 @@ This work explores the hypothesis that:
 
 Complex systems—whether natural, scientific, or historical—often contain latent structural patterns that can be revealed through computational analysis.
 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Dashboard Link:
+
+
+### Demo 1
+
+![Demo 1](demo1.gif)
+
+
+
+### Demo 2
+![Demo 2](demo2.gif)
+
+
+
+### Demo 3
+![Demo 3](demo3.gif)
+
+
+### Demo 4
+![Demo 4](demo4.gif)
+
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
